@@ -1,2 +1,0 @@
-# catan
-Catan Scores
