@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Catan Dice Game — Lance &amp; Kat</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English:ital@0;1&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --parchment: #f5e9c8;
+  --parchment-dark: #e8d5a0;
+  --parchment-deep: #d4b96a;
+  --ink: #2c1a08;
+  --ink-faded: #5a3e20;
+  --red-wax: #8b1a1a;
+  --gold: #9a7b1c;
+  --bt: 3px solid #5a3e20;
+  --bn: 1px solid var(--parchment-deep);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #3d2b0e;
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  padding: 1rem 0.5rem 3rem;
+  font-family: 'Crimson Text', Georgia, serif;
+}
+.sheet {
+  background: var(--parchment);
+  max-width: 700px; width: 100%;
+  border: 5px solid #5a3e20; border-radius: 3px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 2px 0 #9a7b1c;
+  overflow: hidden;
+}
+
+/* HEADER */
+.header { text-align: center; padding: 1.3rem 1.5rem 0.9rem; border-bottom: 2px solid var(--parchment-deep); }
+.header-sup { font-family: 'Cinzel', serif; font-size: clamp(0.55rem,1.8vw,0.7rem); letter-spacing: 0.22em; color: var(--gold); text-transform: uppercase; margin-bottom: 0.25rem; }
+.header-title { font-family: 'Cinzel', serif; font-size: clamp(1.4rem,5vw,2.2rem); font-weight: 700; color: var(--ink); line-height: 1.1; letter-spacing: 0.04em; }
+.header-title span { color: var(--red-wax); }
+.header-rule { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0 0.3rem; }
+.header-rule::before, .header-rule::after { content: ''; flex: 1; height: 1px; background: var(--parchment-deep); }
+.ornament-text { font-family: 'IM Fell English', serif; font-style: italic; font-size: clamp(0.78rem,2vw,0.88rem); color: var(--ink-faded); white-space: nowrap; }
+.dice-row { font-size: clamp(0.9rem,3vw,1.15rem); opacity: 0.45; letter-spacing: 0.14em; padding-bottom: 0.2rem; }
+
+/* META */
+.meta-row { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; padding: 0.6rem 1.2rem; border-bottom: var(--bn); align-items: center; justify-content: space-between; }
+.meta-field { display: flex; align-items: baseline; gap: 0.4rem; flex: 1; min-width: 110px; }
+.meta-label { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faded); white-space: nowrap; }
+.meta-input { background: transparent; border: none; border-bottom: 1px solid var(--parchment-deep); font-family: 'Crimson Text', serif; font-size: 1rem; color: var(--ink); flex: 1; outline: none; padding: 0 2px; min-width: 60px; }
+.meta-input:focus { border-bottom-color: var(--gold); }
+.round-badge { background: var(--red-wax); color: var(--parchment); font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.08em; padding: 0.2rem 0.8rem; border-radius: 2px; text-transform: uppercase; white-space: nowrap; }
+
+/* QUICK REF */
+.scoring-guide { padding: 0.5rem 1.2rem; border-bottom: var(--bn); display: flex; flex-wrap: wrap; gap: 0.25rem 1.2rem; }
+.guide-title { font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); width: 100%; margin-bottom: 0.1rem; }
+.guide-item { font-family: 'Crimson Text', serif; font-size: clamp(0.75rem,2.2vw,0.82rem); color: var(--ink-faded); }
+.guide-item strong { color: var(--ink); font-weight: 600; }
+
+/* PLAYER HEADER */
+.player-setup { display: grid; grid-template-columns: 110px 1fr 1fr; border-bottom: var(--bt); }
+.player-label-cell { padding: 0.7rem 0.9rem; display: flex; align-items: center; background: var(--parchment-dark); border-right: var(--bt); font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-faded); }
+.player-cell { padding: 0.7rem 1rem; border-right: var(--bn); display: flex; flex-direction: column; gap: 4px; }
+.player-cell:last-child { border-right: none; }
+.player-name-display { font-family: 'Cinzel', serif; font-size: clamp(1.1rem,3.5vw,1.4rem); font-weight: 700; color: var(--ink); letter-spacing: 0.04em; }
+.player-name-display.kat { color: var(--red-wax); }
+.color-picker-row { display: flex; gap: 4px; margin-top: 4px; }
+.color-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: border-color 0.15s; touch-action: manipulation; }
+.color-dot:hover, .color-dot.active { border-color: var(--ink); }
+.color-dot.red    { background: #c0392b; }
+.color-dot.blue   { background: #2980b9; }
+.color-dot.white  { background: #ecf0f1; border-color: #bdc3c7; }
+.color-dot.orange { background: #e67e22; }
+.color-dot.green  { background: #27ae60; }
+.color-dot.brown  { background: #6d4c41; }
+
+/* DESKTOP TABLE */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.score-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.score-table td { border-right: var(--bn); border-bottom: var(--bn); text-align: center; padding: 0; }
+.score-table td:last-child { border-right: none; }
+.col-round { width: 110px; background: var(--parchment-dark); border-right: var(--bt) !important; font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.06em; color: var(--ink-faded); padding: 0.35rem 0.8rem; text-align: left; }
+.round-num { display: inline-block; width: 1.4em; height: 1.4em; line-height: 1.4em; text-align: center; border-radius: 50%; background: var(--parchment-deep); color: var(--ink); font-family: 'Cinzel', serif; font-size: 0.65rem; font-weight: 700; margin-right: 0.35rem; }
+.category-tag { font-family: 'IM Fell English', serif; font-style: italic; font-size: 0.8rem; color: var(--ink-faded); }
+.score-input { width: 100%; height: 40px; background: transparent; border: none; text-align: center; font-family: 'Crimson Text', serif; font-size: 1.25rem; color: var(--ink); outline: none; cursor: pointer; -moz-appearance: textfield; }
+.score-input::-webkit-inner-spin-button, .score-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.score-input:focus { background: rgba(154,123,28,0.1); }
+.score-input.p2:focus { background: rgba(139,26,26,0.06); }
+.section-header td { background: var(--parchment-dark); border-top: 2px solid var(--parchment-deep); }
+.section-label { padding: 0.28rem 0.8rem; font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-faded); border-right: var(--bt) !important; }
+.scoring-row td { height: 40px; }
+.scoring-row:nth-child(even) td { background: rgba(90,62,32,0.03); }
+.scoring-row:hover td { background: rgba(154,123,28,0.07); }
+.scoring-row td.col-round { padding: 0 0.8rem; }
+.bonus-row td { background: rgba(139,26,26,0.04); }
+.bonus-row td.col-round { color: var(--red-wax); }
+.total-section { border-top: var(--bt); }
+.total-row td { background: var(--parchment-dark); height: 50px; }
+.total-row td.col-round { font-family: 'Cinzel', serif; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; color: var(--ink); }
+.total-display { font-family: 'Cinzel', serif; font-size: 1.7rem; font-weight: 700; color: var(--ink); line-height: 50px; }
+.winner-cell { background: rgba(139,26,26,0.08) !important; }
+.winner-display { color: var(--red-wax) !important; }
+.rank-row td { background: var(--parchment-dark); padding: 0.35rem; font-family: 'IM Fell English', serif; font-size: 1rem; color: var(--ink-faded); font-style: italic; }
+.rank-row td.col-round { font-family: 'Cinzel', serif; font-style: normal; font-size: 0.58rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faded); }
+
+/* MOBILE SCOREBOARD STRIP */
+.mobile-scoreboard { display: none; border-bottom: 2px solid var(--parchment-deep); }
+.msb-item { flex: 1; text-align: center; padding: 0.6rem 0.5rem; border-right: var(--bn); }
+.msb-item:last-child { border-right: none; }
+.msb-name { font-family: 'Cinzel', serif; font-size: 0.7rem; color: var(--ink-faded); letter-spacing: 0.1em; text-transform: uppercase; }
+.msb-score { font-family: 'Cinzel', serif; font-size: 1.6rem; font-weight: 700; color: var(--ink); }
+.msb-item.leader { background: rgba(139,26,26,0.06); }
+.msb-item.leader .msb-score, .msb-item.leader .msb-name { color: var(--red-wax); }
+
+/* MOBILE TABS + PANELS */
+.mobile-view { display: none; }
+.player-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: var(--bt); }
+.ptab { padding: 0.75rem 0.5rem; font-family: 'Cinzel', serif; font-size: clamp(0.8rem,3vw,1rem); font-weight: 700; letter-spacing: 0.06em; color: var(--ink-faded); text-align: center; cursor: pointer; touch-action: manipulation; border-bottom: 4px solid transparent; border-right: var(--bn); transition: all 0.15s; background: var(--parchment-dark); }
+.ptab:last-child { border-right: none; }
+.ptab.active { color: var(--ink); border-bottom-color: var(--red-wax); background: var(--parchment); }
+.ptab.p2-tab.active { color: var(--red-wax); }
+.mobile-player-panel { display: none; padding: 0.75rem; }
+.mobile-player-panel.active { display: block; }
+.mobile-round-list { display: flex; flex-direction: column; gap: 5px; }
+.mobile-section-hdr { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin: 0.8rem 0 0.35rem; }
+.mobile-round-item { display: flex; align-items: center; background: var(--parchment); border: 1px solid var(--parchment-deep); border-radius: 3px; overflow: hidden; min-height: 52px; }
+.mobile-round-item.bonus { border-color: rgba(139,26,26,0.3); background: rgba(139,26,26,0.03); }
+.mobile-round-label { flex: 1; padding: 0 0.85rem; font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.05em; color: var(--ink-faded); display: flex; align-items: center; gap: 0.5rem; }
+.mobile-round-item.bonus .mobile-round-label { color: var(--red-wax); }
+.mobile-score-ctrl { display: flex; align-items: center; border-left: 1px solid var(--parchment-deep); }
+.mscore-btn { width: 52px; height: 52px; border: none; background: transparent; font-size: 1.5rem; color: var(--ink-faded); cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: background 0.1s; user-select: none; }
+.mscore-btn:active { background: var(--parchment-deep); color: var(--ink); }
+.mscore-val { min-width: 56px; height: 52px; line-height: 52px; text-align: center; font-family: 'Cinzel', serif; font-size: 1.3rem; color: var(--ink); font-weight: 700; border-left: 1px solid var(--parchment-deep); border-right: 1px solid var(--parchment-deep); }
+.mscore-val.zero { color: var(--parchment-deep); font-weight: 400; }
+.mobile-total-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.1rem; margin-top: 0.9rem; background: var(--parchment-dark); border: var(--bt); border-radius: 2px; }
+.mtotal-label { font-family: 'Cinzel', serif; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faded); }
+.mtotal-rank { font-family: 'IM Fell English', serif; font-style: italic; font-size: 1rem; color: var(--ink-faded); margin-top: 2px; }
+.mtotal-score { font-family: 'Cinzel', serif; font-size: 2.6rem; font-weight: 700; color: var(--ink); }
+.mtotal-bar-winner .mtotal-score, .mtotal-bar-winner .mtotal-rank { color: var(--red-wax); }
+
+/* SAVE GAME SECTION */
+.save-section { border-top: var(--bt); padding: 1rem 1.2rem; background: var(--parchment-dark); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+.save-left { display: flex; flex-direction: column; gap: 0.2rem; }
+.save-title { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faded); }
+.save-status { font-family: 'IM Fell English', serif; font-style: italic; font-size: 0.85rem; color: var(--ink-faded); min-height: 1.2em; }
+.save-status.success { color: #2d5016; }
+.save-status.error   { color: var(--red-wax); }
+.save-btn { font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--parchment); background: var(--ink); border: none; padding: 0.6rem 1.4rem; border-radius: 2px; cursor: pointer; touch-action: manipulation; transition: background 0.15s; white-space: nowrap; }
+.save-btn:hover { background: #5a3e20; }
+.save-btn:disabled { background: var(--parchment-deep); cursor: not-allowed; }
+
+/* HISTORY PANEL */
+.history-section { border-top: 2px solid var(--parchment-deep); }
+.history-toggle { width: 100%; padding: 0.7rem 1.2rem; display: flex; align-items: center; justify-content: space-between; background: var(--parchment-dark); border: none; cursor: pointer; touch-action: manipulation; font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faded); }
+.history-toggle:hover { background: var(--parchment-deep); }
+.history-caret { font-size: 0.7rem; transition: transform 0.2s; }
+.history-caret.open { transform: rotate(180deg); }
+.history-body { display: none; padding: 0.75rem 1.2rem 1rem; }
+.history-body.open { display: block; }
+.history-loading { font-family: 'IM Fell English', serif; font-style: italic; font-size: 0.9rem; color: var(--ink-faded); text-align: center; padding: 1rem; }
+.history-empty { font-family: 'IM Fell English', serif; font-style: italic; font-size: 0.9rem; color: var(--ink-faded); text-align: center; padding: 1rem; }
+.history-table { width: 100%; border-collapse: collapse; }
+.history-table th { font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--parchment-deep); text-align: center; }
+.history-table th:first-child { text-align: left; }
+.history-table td { font-family: 'Crimson Text', serif; font-size: 0.95rem; color: var(--ink-faded); padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(212,185,106,0.4); text-align: center; }
+.history-table td:first-child { text-align: left; font-style: italic; }
+.history-table tr:last-child td { border-bottom: none; }
+.history-table tr:hover td { background: rgba(154,123,28,0.06); }
+.winner-badge { display: inline-block; font-family: 'Cinzel', serif; font-size: 0.6rem; font-style: normal; letter-spacing: 0.06em; padding: 0.1rem 0.5rem; border-radius: 2px; font-weight: 700; }
+.winner-badge.lance { background: rgba(41,128,185,0.15); color: #1a5a8a; }
+.winner-badge.kat   { background: rgba(139,26,26,0.12); color: var(--red-wax); }
+.winner-badge.tie   { background: rgba(154,123,28,0.15); color: var(--gold); }
+
+/* MAP PANEL */
+.map-section { border-top: 2px solid var(--parchment-deep); }
+.map-toggle { width: 100%; padding: 0.7rem 1.2rem; display: flex; align-items: center; justify-content: space-between; background: var(--parchment-dark); border: none; cursor: pointer; touch-action: manipulation; font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faded); }
+.map-toggle:hover { background: var(--parchment-deep); }
+.map-caret { font-size: 0.7rem; transition: transform 0.2s; }
+.map-caret.open { transform: rotate(180deg); }
+.map-body { display: none; padding: 0.75rem 1rem 1rem; }
+.map-body.open { display: block; }
+.map-note { font-family: 'IM Fell English', serif; font-style: italic; font-size: 0.82rem; color: var(--ink-faded); text-align: center; margin-bottom: 0.6rem; }
+.map-svg-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.map-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; justify-content: center; margin-top: 0.65rem; }
+.map-legend-item { display: flex; align-items: center; gap: 0.3rem; font-family: 'Crimson Text', serif; font-size: 0.82rem; color: var(--ink-faded); }
+
+/* RULES PANEL */
+.rules-section { border-top: 2px solid var(--parchment-deep); }
+.rules-toggle { width: 100%; padding: 0.7rem 1.2rem; display: flex; align-items: center; justify-content: space-between; background: var(--parchment-dark); border: none; cursor: pointer; touch-action: manipulation; font-family: 'Cinzel', serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faded); }
+.rules-toggle:hover { background: var(--parchment-deep); }
+.rules-caret { font-size: 0.7rem; transition: transform 0.2s; }
+.rules-caret.open { transform: rotate(180deg); }
+.rules-body { display: none; padding: 0.9rem 1.2rem 1.1rem; }
+.rules-body.open { display: block; }
+.rules-section-title { font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); margin: 1rem 0 0.4rem; }
+.rules-section-title:first-child { margin-top: 0; }
+.rules-p { font-family: 'Crimson Text', serif; font-size: 1rem; color: var(--ink-faded); line-height: 1.55; margin-bottom: 0.4rem; }
+.rules-p strong { color: var(--ink); font-weight: 600; }
+.rules-p:last-child { margin-bottom: 0; }
+.rules-costs { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.4rem 0.75rem; margin: 0.4rem 0 0.6rem; }
+.rules-cost-item { display: flex; flex-direction: column; padding: 0.45rem 0.6rem; border: var(--bn); border-radius: 2px; background: rgba(255,255,255,0.3); }
+.rules-cost-name { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); margin-bottom: 2px; }
+.rules-cost-res  { font-family: 'Crimson Text', serif; font-size: 0.88rem; color: var(--ink-faded); }
+.rules-cost-pts  { font-family: 'Cinzel', serif; font-size: 0.58rem; color: var(--gold); margin-top: 2px; }
+.rules-tip { display: flex; gap: 0.5rem; padding: 0.5rem 0.7rem; background: rgba(139,26,26,0.05); border-left: 3px solid var(--red-wax); border-radius: 0 2px 2px 0; margin-top: 0.6rem; font-family: 'IM Fell English', serif; font-style: italic; font-size: 0.9rem; color: var(--ink-faded); line-height: 1.4; }
+
+/* FOOTER */
+.footer { padding: 0.6rem 1.2rem; border-top: 2px solid var(--parchment-deep); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+.footer-note { font-family: 'IM Fell English', serif; font-style: italic; font-size: 0.75rem; color: var(--ink-faded); }
+.btn-group { display: flex; gap: 0.4rem; }
+.reset-btn { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faded); background: transparent; border: 1px solid var(--parchment-deep); padding: 0.45rem 0.9rem; border-radius: 2px; cursor: pointer; touch-action: manipulation; }
+.reset-btn:hover { background: var(--parchment); color: var(--red-wax); }
+.print-btn { font-family: 'Cinzel', serif; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--parchment); background: var(--red-wax); border: none; padding: 0.45rem 1rem; border-radius: 2px; cursor: pointer; touch-action: manipulation; }
+.print-btn:hover { background: #6d1515; }
+
+/* RESPONSIVE */
+@media (max-width: 560px) {
+  body { padding: 0; }
+  .sheet { border-left: none; border-right: none; border-radius: 0; border-width: 3px 0; }
+  .desktop-table { display: none; }
+  .mobile-view { display: block; }
+  .mobile-scoreboard { display: flex; }
+  .scoring-guide { display: none; }
+  .header { padding: 1rem 1rem 0.6rem; }
+  .meta-row { padding: 0.5rem 0.75rem; }
+  .player-setup { grid-template-columns: 70px 1fr 1fr; }
+  .player-label-cell { font-size: 0.5rem; padding: 0.5rem 0.4rem; }
+  .player-cell { padding: 0.5rem 0.6rem; }
+  .save-section { padding: 0.85rem 0.75rem; }
+}
+
+@media print {
+  body { background: white; padding: 0; }
+  .sheet { box-shadow: none; border: 2px solid #5a3e20; max-width: 100%; }
+  .reset-btn, .print-btn, .save-section, .history-section, .rules-section, .map-section { display: none; }
+  .mobile-view, .mobile-scoreboard { display: none !important; }
+  .desktop-table { display: block !important; }
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="header">
+    <div class="header-sup">The Settlers of Catan</div>
+    <div class="header-title">Dice Game <span>&mdash;</span> Score Sheet</div>
+    <div class="header-rule"><span class="ornament-text">Lance &amp; Kat · Roll · Build · Conquer</span></div>
+    <div class="dice-row">⚀ ⚁ ⚂ ⚃ ⚄ ⚅</div>
+  </div>
+
+  <div class="meta-row">
+    <div class="meta-field">
+      <span class="meta-label">Date</span>
+      <input class="meta-input" id="gameDate" type="text" placeholder="mm/dd/yyyy" style="max-width:130px;">
+    </div>
+    <div class="round-badge">15 Rounds</div>
+    <div class="meta-field" style="justify-content:flex-end;">
+      <span class="meta-label">Location</span>
+      <input class="meta-input" type="text" placeholder="Where ye play…" style="max-width:150px;text-align:right;">
+    </div>
+  </div>
+
+  <div class="scoring-guide">
+    <div class="guide-title">Quick Reference</div>
+    <span class="guide-item"><strong>Roads:</strong> +1 each (max 15)</span>
+    <span class="guide-item"><strong>Settlements:</strong> +1 each (max 5)</span>
+    <span class="guide-item"><strong>Cities:</strong> +2 each (max 4)</span>
+    <span class="guide-item"><strong>Knights:</strong> +1 each (max 7)</span>
+    <span class="guide-item"><strong>Longest Road / Largest Army:</strong> +2 bonus</span>
+    <span class="guide-item"><strong>Gold:</strong> +1 per 3 symbols</span>
+  </div>
+
+  <div class="mobile-scoreboard" id="mScoreboard" style="display:none;">
+    <div class="msb-item" id="msb1"><div class="msb-name">Lance</div><div class="msb-score" id="msbs1">0</div></div>
+    <div class="msb-item" id="msb2"><div class="msb-name">Kat</div><div class="msb-score" id="msbs2">0</div></div>
+  </div>
+
+  <div class="player-setup">
+    <div class="player-label-cell">Players</div>
+    <div class="player-cell">
+      <div class="player-name-display">Lance</div>
+      <div class="color-picker-row" data-player="1">
+        <div class="color-dot blue active"></div><div class="color-dot red"></div><div class="color-dot white"></div>
+        <div class="color-dot orange"></div><div class="color-dot green"></div><div class="color-dot brown"></div>
+      </div>
+    </div>
+    <div class="player-cell">
+      <div class="player-name-display kat">Kat</div>
+      <div class="color-picker-row" data-player="2">
+        <div class="color-dot red active"></div><div class="color-dot blue"></div><div class="color-dot white"></div>
+        <div class="color-dot orange"></div><div class="color-dot green"></div><div class="color-dot brown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESKTOP TABLE -->
+  <div class="desktop-table table-wrap">
+    <table class="score-table">
+      <thead>
+        <tr class="section-header">
+          <td class="col-round section-label" style="border-bottom:var(--bn);">Round</td>
+          <td style="text-align:center;padding:0.28rem 1rem;border-bottom:var(--bn);font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--ink);letter-spacing:0.04em;">Lance</td>
+          <td style="text-align:center;padding:0.28rem 1rem;border-bottom:var(--bn);font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--red-wax);letter-spacing:0.04em;">Kat</td>
+        </tr>
+      </thead>
+      <tbody id="scoreBody"></tbody>
+      <tfoot id="scoreFoot"></tfoot>
+    </table>
+  </div>
+
+  <!-- MOBILE VIEW -->
+  <div class="mobile-view">
+    <div class="player-tabs" id="playerTabs">
+      <div class="ptab active" data-p="1">Lance</div>
+      <div class="ptab p2-tab" data-p="2">Kat</div>
+    </div>
+    <div id="mobilePanels"></div>
+  </div>
+
+  <!-- SAVE GAME -->
+  <div class="save-section">
+    <div class="save-left">
+      <div class="save-title">Save to Game History</div>
+      <div class="save-status" id="saveStatus">Enter scores, then save when the game is complete.</div>
+    </div>
+    <button class="save-btn" id="saveBtn" onclick="saveGame()">Save Game</button>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="history-section">
+    <button class="history-toggle" onclick="toggleHistory()" id="historyToggle">
+      <span>Game History</span>
+      <span class="history-caret" id="historyCaret">▼</span>
+    </button>
+    <div class="history-body" id="historyBody">
+      <div class="history-loading" id="historyLoading">Loading history…</div>
+      <div id="historyContent" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-section">
+    <button class="map-toggle" onclick="toggleMap()">
+      <span>Island Map — Island One</span>
+      <span class="map-caret" id="mapCaret">▼</span>
+    </button>
+    <div class="map-body" id="mapBody">
+      <div class="map-note">Build outward from the starting road ➤ following the chain. Numbers show point values.</div>
+      <div class="map-svg-wrap">
+<!--
+  CATAN DICE GAME — ISLAND ONE MAP (accurate reconstruction)
+
+  Node grid (pointy-top hexes, radius ~62px):
+  Hex centres at:  Forest(160,108) Hills(280,108) Pasture(400,108)
+                   Fields(100,215) Mtns(220,215) Desert(340,215) Hills2(460,215)
+                   Forest2(160,322) Fields2(280,322) Mtns2(400,322)
+
+  Intersection nodes (vertices of hexes) used as road endpoints:
+  Row0: P0(160,46)  P1(280,46)  P2(400,46)
+  Row1: P3(100,108) P4(220,108) P5(340,108) P6(460,108)  P7(520,108)
+  Row2: P8(40,170)  P9(160,170) P10(280,170) P11(400,170) P12(520,170)
+  Row3: P13(40,260) P14(160,260) P15(280,260) P16(400,260) P17(520,260)
+  Row4: P18(100,322) P19(220,322) P20(340,322) P21(460,322)
+  Row5: P22(160,384) P23(280,384) P24(400,384)
+
+  Road chain (Island One, starting road = P8→P9, roads numbered 1–15):
+  Start(free): P8–P9
+  1: P9–P3   2: P3–P0   3: P0–P4   4: P4–P1   5: P1–P5
+  6: P5–P2   7: P2–P6   8: P6–P7   9: P7–P12  10: P12–P17
+  11: P17–P21  12: P21–P24  13: P24–P20  14: P20–P23  15: P23–P22
+
+  Settlements (adjacent to road node, built in order):
+  S3: P3  S4: P0  S5: P1  S7: P7  S9: P17  S11: P22
+
+  Cities (adjacent to road node, built in order):
+  C7: P6  C12: P12  C20: P24  C30: P21
+
+  Knights (one per terrain hex, built in order):
+  K1(Lumber): Forest  hex centre (160,108)  — but placed near centre
+  K2(Brick):  Hills   hex (280,108)
+  K3(Wool):   Pasture hex (400,108)
+  K4(Ore):    Mtns    hex (220,215)
+  K5(Grain):  Fields  hex (100,215)
+  K6(any★):  Desert  hex (340,215)
+-->
+<svg viewBox="0 0 600 430" xmlns="http://www.w3.org/2000/svg"
+     style="width:100%;max-width:600px;display:block;margin:0 auto;">
+<defs>
+  <marker id="startArr" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+    <polygon points="0,0 8,4 0,8" fill="#2d5016"/>
+  </marker>
+</defs>
+
+<!-- ── OCEAN BACKGROUND ── -->
+<rect x="0" y="0" width="600" height="430" rx="6" fill="#c8dff0" opacity="0.35"/>
+
+<!-- ── TERRAIN HEXES (pointy-top, r≈62) ── -->
+<!-- hex(cx,cy,r) pointy-top: vertices at angles 30°,90°,150°,210°,270°,330° -->
+<!-- r=58 for visual fit -->
+
+<!-- Row 1 -->
+<polygon points="160,50 207,77 207,131 160,158 113,131 113,77" fill="#5a8c3c" opacity="0.55"/><!-- Forest -->
+<polygon points="280,50 327,77 327,131 280,158 233,131 233,77" fill="#c4692a" opacity="0.55"/><!-- Hills -->
+<polygon points="400,50 447,77 447,131 400,158 353,131 353,77" fill="#8bc48a" opacity="0.55"/><!-- Pasture -->
+
+<!-- Row 2 -->
+<polygon points="100,157 147,184 147,238 100,265 53,238 53,184"  fill="#d4a830" opacity="0.55"/><!-- Fields -->
+<polygon points="220,157 267,184 267,238 220,265 173,238 173,184" fill="#888c8a" opacity="0.55"/><!-- Mountains -->
+<polygon points="340,157 387,184 387,238 340,265 293,238 293,184" fill="#e8d5a0" opacity="0.7"/><!-- Desert -->
+<polygon points="460,157 507,184 507,238 460,265 413,238 413,184" fill="#c4692a" opacity="0.55"/><!-- Hills -->
+
+<!-- Row 3 -->
+<polygon points="160,264 207,291 207,345 160,372 113,345 113,291" fill="#5a8c3c" opacity="0.55"/><!-- Forest -->
+<polygon points="280,264 327,291 327,345 280,372 233,345 233,291" fill="#d4a830" opacity="0.55"/><!-- Fields -->
+<polygon points="400,264 447,291 447,345 400,372 353,345 353,291" fill="#888c8a" opacity="0.55"/><!-- Mountains -->
+
+<!-- ── TERRAIN LABELS ── -->
+<g font-size="9.5" text-anchor="middle" font-style="italic" fill="#2c1a08" opacity="0.75" font-family="Georgia,serif">
+  <text x="160" y="116">Forest</text>    <text x="160" y="127">🪵 Lumber</text>
+  <text x="280" y="116">Hills</text>     <text x="280" y="127">🧱 Brick</text>
+  <text x="400" y="116">Pasture</text>   <text x="400" y="127">🐑 Wool</text>
+  <text x="100" y="223">Fields</text>    <text x="100" y="234">🌾 Grain</text>
+  <text x="220" y="223">Mountains</text> <text x="220" y="234">⛏ Ore</text>
+  <text x="340" y="219">Desert</text>    <text x="340" y="230">★ Any</text>
+  <text x="460" y="223">Hills</text>     <text x="460" y="234">🧱 Brick</text>
+  <text x="160" y="320">Forest</text>    <text x="160" y="331">🪵 Lumber</text>
+  <text x="280" y="320">Fields</text>    <text x="280" y="331">🌾 Grain</text>
+  <text x="400" y="320">Mountains</text> <text x="400" y="331">⛏ Ore</text>
+</g>
+
+<!-- ── ALL ROAD SEGMENTS (unbuilt = dashed gold) ── -->
+<!-- Road node coordinates:
+  P0(160,50)  P1(280,50)  P2(400,50)
+  P3(113,77)  P4(233,77)  P5(353,77)  P6(447,77)
+  P7(507,104) [corner node right of P6, on hex edge]
+  Actually using hex vertices precisely:
+  top row hex vertices:
+    Forest: TL(113,77) T(160,50) TR(207,77) BR(207,131) B(160,158) BL(113,131)
+    Hills:  TL(233,77) T(280,50) TR(327,77) BR(327,131) B(280,158) BL(233,131)
+    Pasture:TL(353,77) T(400,50) TR(447,77) BR(447,131) B(400,158) BL(353,131)
+  Using these for road nodes.
+-->
+
+<!-- Roads as thick dashed segments, colour-coded by build sequence -->
+<!-- Starting road (free, already built) — bold green -->
+<line x1="53" y1="184" x2="113" y2="131" stroke="#2d5016" stroke-width="6" stroke-linecap="round"/>
+<text x="28" y="158" font-size="9" fill="#2d5016" font-family="Georgia,serif" font-style="italic" font-weight="bold">START</text>
+
+<!-- Roads 1–5 (perimeter clockwise top-left) -->
+<line x1="113" y1="131" x2="113" y2="77"  stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R1 -->
+<line x1="113" y1="77"  x2="160" y2="50"  stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R2 -->
+<line x1="160" y1="50"  x2="207" y2="77"  stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R3 -->
+<line x1="207" y1="77"  x2="280" y2="50"  stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R4 -->
+<line x1="280" y1="50"  x2="353" y2="77"  stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R5 -->
+
+<!-- Roads 6–8 (top-right) -->
+<line x1="353" y1="77"  x2="400" y2="50"  stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R6 -->
+<line x1="400" y1="50"  x2="447" y2="77"  stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R7 -->
+<line x1="447" y1="77"  x2="507" y2="104" stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R8 -->
+
+<!-- Roads 9–10 (right coast) -->
+<line x1="507" y1="104" x2="507" y2="184" stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R9 -->
+<line x1="507" y1="184" x2="507" y2="264" stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R10 -->
+
+<!-- Roads 11–15 (bottom, right to left) -->
+<line x1="507" y1="264" x2="447" y2="291" stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R11 -->
+<line x1="447" y1="291" x2="400" y2="372" stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R12 -->
+<line x1="400" y1="372" x2="327" y2="345" stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R13 -->
+<line x1="327" y1="345" x2="280" y2="372" stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R14 -->
+<line x1="280" y1="372" x2="207" y2="345" stroke="#7a6010" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="7,3"/><!-- R15 -->
+
+<!-- ── ROAD SEQUENCE NUMBERS ── -->
+<g font-size="10" text-anchor="middle" fill="#5a3e20" font-family="'Cinzel',Georgia,serif" font-weight="bold">
+  <!-- circled numbers on each road segment midpoint -->
+  <circle cx="113" cy="104" r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="113" y="108">1</text>
+  <circle cx="136" cy="63"  r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="136" y="67">2</text>
+  <circle cx="183" cy="63"  r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="183" y="67">3</text>
+  <circle cx="243" cy="63"  r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="243" y="67">4</text>
+  <circle cx="316" cy="63"  r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="316" y="67">5</text>
+  <circle cx="376" cy="63"  r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="376" y="67">6</text>
+  <circle cx="423" cy="63"  r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="423" y="67">7</text>
+  <circle cx="477" cy="90"  r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="477" y="94">8</text>
+  <circle cx="519" cy="144" r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="519" y="148">9</text>
+  <circle cx="519" cy="224" r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="519" y="228">10</text>
+  <circle cx="484" cy="277" r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="484" y="281">11</text>
+  <circle cx="430" cy="335" r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="430" y="339">12</text>
+  <circle cx="363" cy="360" r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="363" y="364">13</text>
+  <circle cx="303" cy="360" r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="303" y="364">14</text>
+  <circle cx="243" cy="358" r="9" fill="#f5e9c8" stroke="#9a7b1c" stroke-width="1"/><text x="243" y="362">15</text>
+</g>
+
+<!-- ── KNIGHTS (shield on each hex centre) ── -->
+<!-- Knight macro: shield polygon + K# + resource -->
+<!-- K1 Forest -->
+<g transform="translate(160,104)">
+  <path d="M0,-22 L18,-12 L18,8 L0,22 L-18,8 L-18,-12 Z" fill="#d4ebc4" stroke="#2d5016" stroke-width="2"/>
+  <text x="0" y="-4" font-size="10" font-weight="bold" fill="#1a4010" text-anchor="middle" font-family="Georgia,serif">K1</text>
+  <text x="0" y="10" font-size="9" fill="#2d5016" text-anchor="middle" font-family="Georgia,serif">Lumber</text>
+</g>
+<!-- K2 Hills -->
+<g transform="translate(280,104)">
+  <path d="M0,-22 L18,-12 L18,8 L0,22 L-18,8 L-18,-12 Z" fill="#d4ebc4" stroke="#2d5016" stroke-width="2"/>
+  <text x="0" y="-4" font-size="10" font-weight="bold" fill="#1a4010" text-anchor="middle" font-family="Georgia,serif">K2</text>
+  <text x="0" y="10" font-size="9" fill="#2d5016" text-anchor="middle" font-family="Georgia,serif">Brick</text>
+</g>
+<!-- K3 Pasture -->
+<g transform="translate(400,104)">
+  <path d="M0,-22 L18,-12 L18,8 L0,22 L-18,8 L-18,-12 Z" fill="#d4ebc4" stroke="#2d5016" stroke-width="2"/>
+  <text x="0" y="-4" font-size="10" font-weight="bold" fill="#1a4010" text-anchor="middle" font-family="Georgia,serif">K3</text>
+  <text x="0" y="10" font-size="9" fill="#2d5016" text-anchor="middle" font-family="Georgia,serif">Wool</text>
+</g>
+<!-- K4 Mountains -->
+<g transform="translate(220,211)">
+  <path d="M0,-22 L18,-12 L18,8 L0,22 L-18,8 L-18,-12 Z" fill="#d4ebc4" stroke="#2d5016" stroke-width="2"/>
+  <text x="0" y="-4" font-size="10" font-weight="bold" fill="#1a4010" text-anchor="middle" font-family="Georgia,serif">K4</text>
+  <text x="0" y="10" font-size="9" fill="#2d5016" text-anchor="middle" font-family="Georgia,serif">Ore</text>
+</g>
+<!-- K5 Fields -->
+<g transform="translate(100,211)">
+  <path d="M0,-22 L18,-12 L18,8 L0,22 L-18,8 L-18,-12 Z" fill="#d4ebc4" stroke="#2d5016" stroke-width="2"/>
+  <text x="0" y="-4" font-size="10" font-weight="bold" fill="#1a4010" text-anchor="middle" font-family="Georgia,serif">K5</text>
+  <text x="0" y="10" font-size="9" fill="#2d5016" text-anchor="middle" font-family="Georgia,serif">Grain</text>
+</g>
+<!-- K6 Desert (wild) -->
+<g transform="translate(340,211)">
+  <path d="M0,-22 L18,-12 L18,8 L0,22 L-18,8 L-18,-12 Z" fill="#f5deb3" stroke="#8b1a1a" stroke-width="2"/>
+  <text x="0" y="-4" font-size="10" font-weight="bold" fill="#8b1a1a" text-anchor="middle" font-family="Georgia,serif">K6</text>
+  <text x="0" y="10" font-size="9" fill="#8b1a1a" text-anchor="middle" font-family="Georgia,serif">★ Any</text>
+</g>
+
+<!-- ── SETTLEMENTS (house shape at road nodes) ── -->
+<!-- house: pentagon with roof point -->
+<g fill="#f5e9c8" stroke="#2c1a08" stroke-width="2">
+  <!-- S3 at (113,131) -->
+  <path d="M113,118 L125,126 L125,144 L101,144 L101,126 Z"/>
+  <polygon points="113,111 126,120 100,120" fill="#d4b96a" stroke="#2c1a08" stroke-width="2"/>
+  <text x="113" y="139" font-size="10" font-weight="bold" fill="#8b1a1a" text-anchor="middle" font-family="Georgia,serif">3</text>
+
+  <!-- S4 at (160,50) -->
+  <path d="M160,40 L172,48 L172,63 L148,63 L148,48 Z"/>
+  <polygon points="160,33 173,42 147,42" fill="#d4b96a" stroke="#2c1a08" stroke-width="2"/>
+  <text x="160" y="58" font-size="10" font-weight="bold" fill="#8b1a1a" text-anchor="middle" font-family="Georgia,serif">4</text>
+
+  <!-- S5 at (280,50) -->
+  <path d="M280,40 L292,48 L292,63 L268,63 L268,48 Z"/>
+  <polygon points="280,33 293,42 267,42" fill="#d4b96a" stroke="#2c1a08" stroke-width="2"/>
+  <text x="280" y="58" font-size="10" font-weight="bold" fill="#8b1a1a" text-anchor="middle" font-family="Georgia,serif">5</text>
+
+  <!-- S7 at (507,104) — right coast -->
+  <path d="M507,93 L519,101 L519,118 L495,118 L495,101 Z"/>
+  <polygon points="507,86 520,95 494,95" fill="#d4b96a" stroke="#2c1a08" stroke-width="2"/>
+  <text x="507" y="113" font-size="10" font-weight="bold" fill="#8b1a1a" text-anchor="middle" font-family="Georgia,serif">7</text>
+
+  <!-- S9 at (507,264) — right coast lower -->
+  <path d="M507,253 L519,261 L519,278 L495,278 L495,261 Z"/>
+  <polygon points="507,246 520,255 494,255" fill="#d4b96a" stroke="#2c1a08" stroke-width="2"/>
+  <text x="507" y="273" font-size="10" font-weight="bold" fill="#8b1a1a" text-anchor="middle" font-family="Georgia,serif">9</text>
+
+  <!-- S11 at (207,345) — bottom -->
+  <path d="M207,334 L219,342 L219,357 L195,357 L195,342 Z"/>
+  <polygon points="207,327 220,336 194,336" fill="#d4b96a" stroke="#2c1a08" stroke-width="2"/>
+  <text x="207" y="352" font-size="10" font-weight="bold" fill="#8b1a1a" text-anchor="middle" font-family="Georgia,serif">11</text>
+</g>
+
+<!-- ── CITIES (castle shape at road nodes) ── -->
+<g fill="#d4a830" stroke="#2c1a08" stroke-width="2">
+  <!-- C7 at (447,77) -->
+  <rect x="433" y="65" width="28" height="20" rx="1"/>
+  <rect x="435" y="58" width="7" height="9" rx="1"/><rect x="451" y="58" width="7" height="9" rx="1"/>
+  <text x="447" y="80" font-size="10" font-weight="bold" fill="#2c1a08" text-anchor="middle" font-family="Georgia,serif">7</text>
+
+  <!-- C12 at (507,184) -->
+  <rect x="493" y="172" width="28" height="20" rx="1"/>
+  <rect x="495" y="165" width="7" height="9" rx="1"/><rect x="511" y="165" width="7" height="9" rx="1"/>
+  <text x="507" y="187" font-size="10" font-weight="bold" fill="#2c1a08" text-anchor="middle" font-family="Georgia,serif">12</text>
+
+  <!-- C20 at (400,372) — bottom -->
+  <rect x="386" y="360" width="28" height="20" rx="1"/>
+  <rect x="388" y="353" width="7" height="9" rx="1"/><rect x="404" y="353" width="7" height="9" rx="1"/>
+  <text x="400" y="375" font-size="10" font-weight="bold" fill="#2c1a08" text-anchor="middle" font-family="Georgia,serif">20</text>
+
+  <!-- C30 at (447,291) — lower right -->
+  <rect x="433" y="279" width="28" height="20" rx="1"/>
+  <rect x="435" y="272" width="7" height="9" rx="1"/><rect x="451" y="272" width="7" height="9" rx="1"/>
+  <text x="447" y="294" font-size="10" font-weight="bold" fill="#2c1a08" text-anchor="middle" font-family="Georgia,serif">30</text>
+</g>
+
+<!-- ── START ARROW ── -->
+<line x1="20" y1="200" x2="46" y2="182" stroke="#2d5016" stroke-width="2" stroke-dasharray="3,2" marker-end="url(#startArr)"/>
+
+<!-- ── BONUS STRIP ── -->
+<rect x="0" y="408" width="600" height="22" rx="0" fill="#e8d5a0" opacity="0.7"/>
+<text x="300" y="423" font-size="10" font-weight="bold" text-anchor="middle" fill="#5a3e20" font-family="Georgia,serif">
+  🛣 Longest Road (15 roads) = +2 pts   ·   ⚔ Largest Army (3+ knights) = +2 pts   ·   ❌ No build = −2 pts
+</text>
+</svg>
+      </div>
+      <div class="map-legend">
+        <div class="map-legend-item"><svg width="22" height="18"><polygon points="11,1 19,1 22,9 11,17 0,9 3,1" fill="#e8d5a0" stroke="#5a3e20" stroke-width="1.5"/></svg> Settlement (3–11 pts)</div>
+        <div class="map-legend-item"><svg width="22" height="20"><rect x="2" y="5" width="18" height="13" rx="1" fill="#d4b96a" stroke="#5a3e20" stroke-width="1.5"/><rect x="4" y="1" width="5" height="6" rx="1" fill="#d4b96a" stroke="#5a3e20" stroke-width="1.5"/><rect x="13" y="1" width="5" height="6" rx="1" fill="#d4b96a" stroke="#5a3e20" stroke-width="1.5"/></svg> City (7–30 pts)</div>
+        <div class="map-legend-item"><svg width="22" height="20"><polygon points="11,1 19,6 19,14 11,19 3,14 3,6" fill="#c8e0b0" stroke="#2d5016" stroke-width="1.5"/></svg> Knight (joker resource)</div>
+        <div class="map-legend-item"><svg width="22" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="#9a7b1c" stroke-width="3.5" stroke-linecap="round"/></svg> Road (1 pt each)</div>
+        <div class="map-legend-item"><svg width="22" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="#2d5016" stroke-width="4" stroke-linecap="round"/></svg> Starting road (free)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RULES -->
+  <div class="rules-section">
+    <button class="rules-toggle" onclick="toggleRules()">
+      <span>How to Play</span>
+      <span class="rules-caret" id="rulesCaret">▼</span>
+    </button>
+    <div class="rules-body" id="rulesBody">
+
+      <div class="rules-section-title">Objective</div>
+      <div class="rules-p">Score the most points after <strong>15 rounds</strong>. Each round, roll 6 dice up to 3 times (Yahtzee-style), then spend the resources you've rolled to build roads, settlements, cities, and knights on your personal map sheet.</div>
+
+      <div class="rules-section-title">Rolling the Dice</div>
+      <div class="rules-p">Each die face shows one of 6 resources: <strong>🧱 Brick · 🪵 Lumber · 🌾 Grain · 🐑 Wool · ⛏ Ore · 💰 Gold</strong></div>
+      <div class="rules-p"><strong>Roll 1:</strong> Roll all 6 dice. Set any keepers aside.</div>
+      <div class="rules-p"><strong>Roll 2:</strong> Re-roll the rest. You may also pick back up dice you set aside earlier.</div>
+      <div class="rules-p"><strong>Roll 3:</strong> Final roll. After this, your resources are locked (unless you use a Resource Joker or Gold).</div>
+
+      <div class="rules-section-title">Building Costs</div>
+      <div class="rules-costs">
+        <div class="rules-cost-item">
+          <div class="rules-cost-name">🛤 Road</div>
+          <div class="rules-cost-res">1 Brick + 1 Lumber</div>
+          <div class="rules-cost-pts">1 pt each · max 15 · must build in sequence</div>
+        </div>
+        <div class="rules-cost-item">
+          <div class="rules-cost-name">🏘 Settlement</div>
+          <div class="rules-cost-res">1 Lumber + 1 Brick + 1 Grain + 1 Wool</div>
+          <div class="rules-cost-pts">1 pt each · max 5 · must be adjacent to a built road · build in point order</div>
+        </div>
+        <div class="rules-cost-item">
+          <div class="rules-cost-name">🏙 City</div>
+          <div class="rules-cost-res">3 Ore + 2 Grain</div>
+          <div class="rules-cost-pts">2 pts each · max 4 · must upgrade an existing settlement</div>
+        </div>
+        <div class="rules-cost-item">
+          <div class="rules-cost-name">⚔ Knight</div>
+          <div class="rules-cost-res">1 Ore + 1 Grain + 1 Wool</div>
+          <div class="rules-cost-pts">0 pts individually · max 7 · unlocks Resource Joker &amp; Largest Army</div>
+        </div>
+      </div>
+
+      <div class="rules-section-title">Special Bonuses</div>
+      <div class="rules-p"><strong>🛣 Longest Road (+2 pts):</strong> First player to build all 15 roads claims it. If the other player catches up, they take it — the previous holder loses the 2 pts.</div>
+      <div class="rules-p"><strong>⚔ Largest Army (+2 pts):</strong> First player to build 3 knights claims it. Again, transferable if the other player builds more knights.</div>
+      <div class="rules-p"><strong>💰 Gold:</strong> Each gold die face can substitute for any one resource. Gold does not directly score points — it just flexes into whatever you need.</div>
+
+      <div class="rules-section-title">Knights &amp; Resource Jokers</div>
+      <div class="rules-p">Each knight you build earns you a one-time <strong>Resource Joker</strong>: after your third roll, you may turn one die to show any resource face. Mark the knight as used when you do. Build 3 knights to claim <strong>Largest Army</strong> (+2 pts).</div>
+
+      <div class="rules-section-title">Scoring Your Round</div>
+      <div class="rules-p">After building, total up all points earned this turn and write it in the next open round box. If you build multiple things, add them together into one number. <strong>If you build nothing</strong>, write an X — it costs you 2 points at the end.</div>
+
+      <div class="rules-section-title">Winning</div>
+      <div class="rules-p">After all 15 rounds, add up your round scores, subtract 2 pts for each X, and add any active Longest Road / Largest Army bonuses. Highest total wins.</div>
+
+      <div class="rules-tip">💡 Tip: Roads unlock settlements, settlements unlock cities. Don't neglect your road chain — it's the backbone of your whole score.</div>
+
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-note">Catan Dice Game &copy; Klaus Teuber &middot; Catan GmbH</div>
+    <div class="btn-group">
+      <button class="reset-btn" onclick="resetSheet()">Reset</button>
+      <button class="print-btn" onclick="window.print()">Print</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── CONFIGURATION ────────────────────────────────────────────
+// After deploying your Apps Script, paste the Web App URL here:
+const SHEETS_URL = 'YOUR_WEB_APP_URL_HERE';
+// ─────────────────────────────────────────────────────────────
+
+const ROUNDS = 15;
+const BONUSES = [
+  { key:'longest',   label:'🛣 Longest Road' },
+  { key:'largeArmy', label:'⚔ Largest Army'  },
+  { key:'gold',      label:'💰 Gold Symbols'  },
+];
+let scores = {}, historyLoaded = false, historyOpen = false;
+
+function initScores() {
+  scores = { 1:{}, 2:{} };
+  for (let p=1;p<=2;p++) {
+    for (let r=1;r<=ROUNDS;r++) scores[p][`r${r}`]=0;
+    BONUSES.forEach(b=>{ scores[p][b.key]=0; });
+  }
+}
+
+function playerTotal(p) {
+  let s=0;
+  for (let r=1;r<=ROUNDS;r++) s+=scores[p][`r${r}`]||0;
+  BONUSES.forEach(b=>{ s+=scores[p][b.key]||0; });
+  return s;
+}
+
+function roundsPlayed() {
+  let max=0;
+  for (let r=1;r<=ROUNDS;r++) {
+    if(scores[1][`r${r}`]>0 || scores[2][`r${r}`]>0) max=r;
+  }
+  return max;
+}
+
+function buildDesktopTable() {
+  const tbody=document.getElementById('scoreBody'), tfoot=document.getElementById('scoreFoot');
+  for (let r=1;r<=ROUNDS;r++) {
+    const tr=document.createElement('tr'); tr.className='scoring-row';
+    tr.innerHTML=`<td class="col-round"><span class="round-num">${r}</span><span class="category-tag">Round ${r}</span></td>`;
+    for (let p=1;p<=2;p++) {
+      const td=document.createElement('td'), inp=document.createElement('input');
+      inp.type='number'; inp.min=0; inp.className='score-input'+(p===2?' p2':'');
+      inp.id=`dt_r${r}_p${p}`; inp.placeholder='—';
+      inp.addEventListener('input',()=>{ scores[p][`r${r}`]=parseInt(inp.value)||0; syncMobile(p,`r${r}`,scores[p][`r${r}`]); updateTotals(); });
+      td.appendChild(inp); tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  const bh=document.createElement('tr'); bh.className='section-header';
+  bh.innerHTML=`<td class="col-round section-label" style="border-bottom:var(--bn);">Bonuses</td><td colspan="2" style="border-bottom:var(--bn);padding:0.28rem 1rem;text-align:left;"><span style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink-faded);">One-Time Bonus Points</span></td>`;
+  tbody.appendChild(bh);
+  BONUSES.forEach(b=>{
+    const tr=document.createElement('tr'); tr.className='scoring-row bonus-row';
+    tr.innerHTML=`<td class="col-round"><span class="category-tag">${b.label}</span></td>`;
+    for (let p=1;p<=2;p++) {
+      const td=document.createElement('td'), inp=document.createElement('input');
+      inp.type='number'; inp.min=0; inp.className='score-input'+(p===2?' p2':'');
+      inp.id=`dt_${b.key}_p${p}`; inp.placeholder='—';
+      inp.addEventListener('input',()=>{ scores[p][b.key]=parseInt(inp.value)||0; syncMobile(p,b.key,scores[p][b.key]); updateTotals(); });
+      td.appendChild(inp); tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  });
+  const tr=document.createElement('tr'); tr.className='total-row total-section';
+  tr.innerHTML=`<td class="col-round">Total</td>`;
+  for (let p=1;p<=2;p++) {
+    const td=document.createElement('td'); td.id=`dt_total_${p}`;
+    td.innerHTML=`<div class="total-display" id="dt_tdisp_${p}">0</div>`; tr.appendChild(td);
+  }
+  tfoot.appendChild(tr);
+  const rr=document.createElement('tr'); rr.className='rank-row';
+  rr.innerHTML=`<td class="col-round">Result</td>`;
+  for (let p=1;p<=2;p++) {
+    const td=document.createElement('td'); td.id=`dt_rank_${p}`; td.textContent='—'; rr.appendChild(td);
+  }
+  tfoot.appendChild(rr);
+}
+
+function buildMobilePanels() {
+  const container=document.getElementById('mobilePanels');
+  const names=['Lance','Kat'];
+  for (let p=1;p<=2;p++) {
+    const panel=document.createElement('div');
+    panel.className='mobile-player-panel'+(p===1?' active':''); panel.id=`mpanel_${p}`;
+    let html='<div class="mobile-round-list"><div class="mobile-section-hdr">Rounds</div>';
+    for (let r=1;r<=ROUNDS;r++) {
+      html+=`<div class="mobile-round-item"><div class="mobile-round-label"><span class="round-num">${r}</span><span class="category-tag">Round ${r}</span></div><div class="mobile-score-ctrl"><button class="mscore-btn" data-p="${p}" data-key="r${r}" data-dir="-1">−</button><div class="mscore-val zero" id="mv_r${r}_p${p}">0</div><button class="mscore-btn" data-p="${p}" data-key="r${r}" data-dir="1">+</button></div></div>`;
+    }
+    html+='<div class="mobile-section-hdr">Bonuses</div>';
+    BONUSES.forEach(b=>{
+      html+=`<div class="mobile-round-item bonus"><div class="mobile-round-label">${b.label}</div><div class="mobile-score-ctrl"><button class="mscore-btn" data-p="${p}" data-key="${b.key}" data-dir="-1">−</button><div class="mscore-val zero" id="mv_${b.key}_p${p}">0</div><button class="mscore-btn" data-p="${p}" data-key="${b.key}" data-dir="1">+</button></div></div>`;
+    });
+    html+=`</div><div class="mobile-total-bar" id="mtbar_${p}"><div><div class="mtotal-label">${names[p-1]}'s Total</div><div class="mtotal-rank" id="mtrank_${p}">—</div></div><div class="mtotal-score" id="mtscore_${p}">0</div></div>`;
+    panel.innerHTML=html;
+    container.appendChild(panel);
+  }
+  container.addEventListener('click',e=>{
+    const btn=e.target.closest('.mscore-btn'); if(!btn) return;
+    const p=parseInt(btn.dataset.p), key=btn.dataset.key, dir=parseInt(btn.dataset.dir);
+    scores[p][key]=Math.max(0,(scores[p][key]||0)+dir);
+    const el=document.getElementById(`mv_${key}_p${p}`);
+    el.textContent=scores[p][key]; el.classList.toggle('zero',scores[p][key]===0);
+    syncDesktop(p,key,scores[p][key]); updateTotals();
+  });
+}
+
+function syncMobile(p,key,val) {
+  const el=document.getElementById(`mv_${key}_p${p}`); if(!el) return;
+  el.textContent=val; el.classList.toggle('zero',val===0);
+}
+function syncDesktop(p,key,val) {
+  const el=document.getElementById(key.startsWith('r')?`dt_${key}_p${p}`:`dt_${key}_p${p}`);
+  if(el) el.value=val>0?val:'';
+}
+
+function updateTotals() {
+  const t1=playerTotal(1), t2=playerTotal(2);
+  for (let p=1;p<=2;p++) {
+    const t=p===1?t1:t2;
+    const disp=document.getElementById(`dt_tdisp_${p}`); if(disp) disp.textContent=t;
+    const cell=document.getElementById(`dt_total_${p}`);
+    if(cell){cell.classList.remove('winner-cell'); if(disp) disp.classList.remove('winner-display');}
+    const ms=document.getElementById(`mtscore_${p}`); if(ms) ms.textContent=t;
+    const mtbar=document.getElementById(`mtbar_${p}`); if(mtbar) mtbar.classList.remove('mtotal-bar-winner');
+    const msbi=document.getElementById(`msb${p}`); if(msbi) msbi.classList.remove('leader');
+    const msbs=document.getElementById(`msbs${p}`); if(msbs) msbs.textContent=t;
+  }
+  if(t1===0&&t2===0){
+    [1,2].forEach(p=>{ setRankLabel(p,'—'); }); return;
+  }
+  if(t1>t2){ setWinner(1,'Winning! 🏆'); setLoser(2,'Trailing'); }
+  else if(t2>t1){ setWinner(2,'Winning! 🏆'); setLoser(1,'Trailing'); }
+  else{ setTie(1); setTie(2); }
+}
+
+function setWinner(p,label) {
+  const disp=document.getElementById(`dt_tdisp_${p}`), cell=document.getElementById(`dt_total_${p}`);
+  if(cell) cell.classList.add('winner-cell'); if(disp) disp.classList.add('winner-display');
+  setRankLabel(p,label);
+  const mtbar=document.getElementById(`mtbar_${p}`); if(mtbar) mtbar.classList.add('mtotal-bar-winner');
+  const msbi=document.getElementById(`msb${p}`); if(msbi) msbi.classList.add('leader');
+}
+function setLoser(p,label){ setRankLabel(p,label); }
+function setTie(p){ setRankLabel(p,'Tied'); }
+function setRankLabel(p,label){
+  const dr=document.getElementById(`dt_rank_${p}`); if(dr) dr.textContent=label;
+  const mr=document.getElementById(`mtrank_${p}`); if(mr) mr.textContent=label;
+}
+
+// ─── SAVE GAME ────────────────────────────────────────────────
+async function saveGame() {
+  if(SHEETS_URL==='YOUR_WEB_APP_URL_HERE'){
+    setStatus('⚠ Paste your Apps Script URL into the SHEETS_URL variable first.','error'); return;
+  }
+  const t1=playerTotal(1), t2=playerTotal(2);
+  if(t1===0&&t2===0){ setStatus('No scores to save yet.','error'); return; }
+  const winner = t1>t2?'Lance':t2>t1?'Kat':'Tie';
+  const dateVal = document.getElementById('gameDate').value.trim() || new Date().toLocaleDateString('en-US');
+  const rp = roundsPlayed();
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=true; setStatus('Saving…','');
+  try {
+    await fetch(SHEETS_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ date:dateVal, lance:t1, kat:t2, winner, roundsPlayed:rp })
+    });
+    setStatus(`Saved! ${winner==='Tie'?'Tied game':''+winner+' wins'} · Lance ${t1} – Kat ${t2}`,'success');
+    // Refresh history if open
+    if(historyOpen) loadHistory();
+  } catch(err) {
+    setStatus('Save failed. Check your network or Apps Script URL.','error');
+  }
+  btn.disabled=false;
+}
+
+function setStatus(msg,cls){
+  const el=document.getElementById('saveStatus');
+  el.textContent=msg; el.className='save-status'+(cls?' '+cls:'');
+}
+
+// ─── RULES ───────────────────────────────────────────────────
+function toggleMap(){
+  const body=document.getElementById('mapBody'), caret=document.getElementById('mapCaret');
+  const open=body.classList.toggle('open');
+  caret.classList.toggle('open',open);
+}
+
+function toggleRules(){
+  const body=document.getElementById('rulesBody'), caret=document.getElementById('rulesCaret');
+  const open=body.classList.toggle('open');
+  caret.classList.toggle('open',open);
+}
+
+// ─── HISTORY ─────────────────────────────────────────────────
+function toggleHistory(){
+  historyOpen=!historyOpen;
+  document.getElementById('historyBody').classList.toggle('open',historyOpen);
+  document.getElementById('historyCaret').classList.toggle('open',historyOpen);
+  if(historyOpen&&!historyLoaded) loadHistory();
+}
+
+async function loadHistory(){
+  if(SHEETS_URL==='YOUR_WEB_APP_URL_HERE'){
+    document.getElementById('historyLoading').textContent='Add your Apps Script URL to enable history.';
+    return;
+  }
+  document.getElementById('historyLoading').style.display='block';
+  document.getElementById('historyContent').style.display='none';
+  try {
+    const res=await fetch(SHEETS_URL+'?t='+Date.now());
+    const data=await res.json();
+    historyLoaded=true;
+    renderHistory(data.games||[]);
+  } catch(err){
+    document.getElementById('historyLoading').textContent='Could not load history.';
+  }
+}
+
+function renderHistory(games){
+  const loading=document.getElementById('historyLoading'), content=document.getElementById('historyContent');
+  loading.style.display='none'; content.style.display='block';
+  if(!games.length){ content.innerHTML='<div class="history-empty">No games recorded yet. Play one!</div>'; return; }
+
+  // Tally wins
+  let lanceW=0,katW=0,ties=0;
+  games.forEach(g=>{ if(g.winner==='Lance')lanceW++; else if(g.winner==='Kat')katW++; else ties++; });
+
+  let html=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-bottom:0.9rem;">
+      <div style="text-align:center;padding:0.5rem;border:var(--bn);border-radius:2px;">
+        <div style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faded);margin-bottom:2px;">Lance Wins</div>
+        <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:700;color:var(--ink);">${lanceW}</div>
+      </div>
+      <div style="text-align:center;padding:0.5rem;border:var(--bn);border-radius:2px;">
+        <div style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faded);margin-bottom:2px;">Kat Wins</div>
+        <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:700;color:var(--red-wax);">${katW}</div>
+      </div>
+      <div style="text-align:center;padding:0.5rem;border:var(--bn);border-radius:2px;">
+        <div style="font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faded);margin-bottom:2px;">Ties</div>
+        <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:700;color:var(--gold);">${ties}</div>
+      </div>
+    </div>
+    <table class="history-table">
+      <thead><tr>
+        <th>Date</th><th>Lance</th><th>Kat</th><th>Winner</th><th>Rounds</th>
+      </tr></thead><tbody>`;
+  games.forEach(g=>{
+    const wClass=g.winner==='Lance'?'lance':g.winner==='Kat'?'kat':'tie';
+    const wLabel=g.winner==='Tie'?'Tie':g.winner+' 🏆';
+    html+=`<tr>
+      <td>${g.date}</td>
+      <td>${g.lance}</td>
+      <td>${g.kat}</td>
+      <td><span class="winner-badge ${wClass}">${wLabel}</span></td>
+      <td>${g.roundsPlayed||'—'}</td>
+    </tr>`;
+  });
+  html+=`</tbody></table>`;
+  content.innerHTML=html;
+}
+
+function resetSheet(){
+  if(!confirm('Reset all scores?')) return;
+  initScores();
+  document.querySelectorAll('.score-input').forEach(i=>i.value='');
+  document.querySelectorAll('.meta-input').forEach(i=>i.value='');
+  document.querySelectorAll('.mscore-val').forEach(v=>{v.textContent='0';v.classList.add('zero');});
+  setStatus('Enter scores, then save when the game is complete.','');
+  updateTotals();
+}
+
+// ─── TABS & COLORS ────────────────────────────────────────────
+document.getElementById('playerTabs').addEventListener('click',e=>{
+  const tab=e.target.closest('.ptab'); if(!tab) return;
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active')); tab.classList.add('active');
+  document.querySelectorAll('.mobile-player-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(`mpanel_${tab.dataset.p}`).classList.add('active');
+});
+
+document.querySelectorAll('.color-picker-row').forEach(row=>{
+  row.addEventListener('click',e=>{
+    const dot=e.target.closest('.color-dot'); if(!dot) return;
+    row.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('active')); dot.classList.add('active');
+  });
+});
+
+// Prefill today's date
+document.getElementById('gameDate').value = new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'});
+
+// Mobile scoreboard show/hide
+function checkMobile(){ document.getElementById('mScoreboard').style.display=window.innerWidth<=560?'flex':'none'; }
+window.addEventListener('resize',checkMobile); checkMobile();
+
+initScores(); buildDesktopTable(); buildMobilePanels(); updateTotals();
+</script>
+</body>
+</html>
